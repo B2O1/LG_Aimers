@@ -13,11 +13,11 @@ AI 기반 예측을 통해 의료기관의 서비스 경쟁력을 높이고, 난
 #### 기대 효과
 |항목|내용|
 |---|---|
-|치료 효율 증가|asfd|
-|맞춤형 치료 전략 수립|sdaf|
+|치료 효율 증가|환자별 시술 시기·나이·시술 유형·배아 수·품질 등 주요 변수를 통합한 AI 예측모델을 적용하여 첫 시술 주기 성공률을 향상|
+|맞춤형 치료 전략 수립|연령·임신 시도 경과 연수·배란 유도 유형·PGS/PGD 여부·배아 생성 수 등 30여 개 특징 기반 프로파일링으로 최적 자극 강도·배아 이식 수·시술 순서를 추천해 임신률을 개선|
 
 ## 2. 팀원 소개
-|사진|사진|사진|
+|<img src="https://github.com/user-attachments/assets/6414e203-68b9-439e-b582-eb04db032889" width="200px">|<img src="https://github.com/user-attachments/assets/f03cd9c5-824e-41f2-868f-ee2a234e59bd" width="200px">|<img src="https://github.com/user-attachments/assets/6642f460-22fd-45b7-adb4-696a23a6ab1d" width="200px">|
 |---|---|---|
 |김혜원|박찬우|변해민|
 
@@ -25,21 +25,36 @@ AI 기반 예측을 통해 의료기관의 서비스 경쟁력을 높이고, 난
 전체 기간 : 2025.02.01 ~ 2025.02.27
 |기간|수행 내용|
 |---|---|
-|ㅁㄴㅇㄹ|ㅁㄴㅇㄹ|
+|2025.02.01 ~ 2025.02.05|전처리 <br> - null 값 처리 및 기본 결측치 채우기 <br> - 도메인 특성 파악 후 주요 컬럼 의미 이해|
+|2025.02.06 ~ 2025.02.09|전처리 <br> - 시술 유형별 데이터 패턴 확인 (DI / IVF 중심) <br> - 특정 시술 유형에서 발생하는 구조적 NaN 정리 <br> - 단일값 컬럼 및 불필요 변수 후보 추출 <br> - NaN 처리 방향 설정 (0 또는 Unknown/2)|
+|2025.02.09 ~ 2025.02.12|전처리 <br> - 결측 연쇄 패턴 확인 (PGD/PGS NaN ↔ 배아 관련 변수 NaN) <br> - 경과일 변수 및 배아/난자 수 변수 drop 또는 대체 기준 정리 <br> - 특정 시술 유형 자체가 NaN인 행 처리 방안 논의|
+|2025.02.09 ~ 2025.02.12|파생변수 생성 <br> - 시술 관련 파생 변수 (나이 대비 시술 횟수, IVF/DI 비율) <br> - 배아 & 난자 파생 변수 (미세주입 성공률, 난자 활용률) <br> - 불임 원인 관련 파생 변수 (남성/여성 원인 개수) <br> - 기증 관련 파생 변수 (기증 정자/배아 사용 비율)|
+|2025.02.12 ~ 2025.02.16|모델링 준비 및 실험 설계 <br> - 기본 모델 ExtraTreesClassifier로 통일 <br> - 인코딩 → 로그 변환 → 이상치 탐지/제거 파이프라인 구성 <br> - 데이터 불균형 대응 샘플링 기법 검토 (SMOTEENN, Tomek, ADASYN)|
+|2025.02.16 ~ 2025.02.19|Feature Selection 및 성능 개선 <br> - Filter method (Chi-square) 적용 <br> - SHAP 기반 변수 중요도 분석 <br> - RFE/RFECV 기반 변수 선택 <br> - 이상치 제거 vs KNN Imputer 대체 비교|
+|2025.02.19 ~ 2025.02.21|최종 정리 <br> - 최적 전처리/파생변수 조합 확정 <br> - 샘플링 및 임계값 조정 결과 비교 <br> - 최종 모델 성능 평가 및 보고서 작성|
 
 ## 4. 프로젝트 환경 및 구성 요소
 
 ### 👨🏻‍💻 Tech stack
 
 #### 사용 프로그램
-|항목|내용|
+
+| 항목 | 내용 |
 |---|---|
-|ㅁㄹㅇ|ㅁㄴㅇㄹ|
+| Language | Python |
+| Development Environment | Google Colab, Jupyter Notebook |
+| Collaboration Tool | GitHub, Discord |
 
 #### 사용한 라이브러리
-|항목|내용|
+
+| 항목 | 내용 |
 |---|---|
-|ㅁㄹㅇ|ㅁㄴㅇㄹ|
+| Data Processing | pandas, numpy |
+| Visualization | matplotlib, seaborn |
+| Machine Learning | scikit-learn |
+| Imbalanced Learning | imbalanced-learn (SMOTE, SMOTEENN, TomekLinks, ADASYN) |
+| Hyperparameter Tuning | optuna, RandomizedSearchCV, GridSearchCV |
+| Explainability | shap |
 
 ### 📊 사용 데이터
 
@@ -115,9 +130,128 @@ AI 기반 예측을 통해 의료기관의 서비스 경쟁력을 높이고, 난
 | 임신 성공 여부                              | 해당 시술로부터 임신 성공 여부                                                                   |
 ## 5. 프로젝트 내용
 
-### 🤔 데이터 전처리(예시)
+### 🤔 데이터 전처리
 
-### 📈 EDA(예시)
+| 구분 | 내용 | 처리 방향 |
+|------|------|-----------|
+| 시술 유형별 결측 패턴 | DI 계열(IUI, ICI, IVI 등)에서 단일배아이식, PGD/PGS, 배아 관련 수치형 컬럼 대거 NaN 발생 | DI 시술은 해당 과정 자체가 없으므로 0 또는 Unknown 처리 고려 |
+| IVF 계열 특징값 | ICSI/IVF에서 착상전유전검사=1, PGD/PGS=1, 여성요인=0 등 특정 값으로 고정된 컬럼 존재 | 단일값 컬럼은 drop 후보 |
+| 주요 NaN 컬럼(이진형) | 단일배아이식여부, PGD/PGS 관련 여부, 동결/신선/기증 배아 여부, 대리모 여부 | NaN → 0 또는 2로 통일 |
+| 주요 NaN 컬럼(시술여부) | PGD 시술 여부, PGS 시술 여부 | NaN → 0 또는 2로 통일 |
+| 주요 NaN 컬럼(경과일) | 난자채취/해동/혼합 경과일, 배아이식/해동 경과일 | 정보 불완전 → drop 권장 |
+| 배아/난자 수 관련 결측 | 총 생성 배아 수, 저장된 배아 수, 해동 난자 수 등 다수 | 0 또는 Unknown 처리 |
+| 임신 경과 연수 | 임신 시도 또는 마지막 임신 경과 연수 NaN 존재 | drop 또는 Unknown 처리 |
+| 특정 시술 유형 NaN 행 | 특정 시술 유형 자체가 결측인 행 2개 존재 | 결측 행 제거 또는 유사 패턴 기반 채움 필요 |
+| 중복 ID 처리 | ID 중복 제거 시도했으나 실제로는 중복 없음 | 중복 제거하면 안 됨 |
+
+---
+
+### 📈 EDA
+
+| 분석 항목 | 관찰된 패턴 | 인사이트 |
+|----------|-------------|----------|
+| DI 시술 유형 | DI 계열은 배아이식/PGD/PGS 관련 값이 대부분 NaN | 시술 구조상 의미 없는 변수 많음 |
+| IVF 시술 유형 | IVF 계열은 PGS/PGD 값이 거의 1로 고정 | 특정 컬럼은 변별력 낮음 |
+| BLASTOCYST 포함 시술 | 일부 BLASTOCYST 조합에서 PGD/PGS 또는 난자해동경과일 NaN 발생 | 특정 subtype에서 데이터 누락 집중 |
+| 단일값 컬럼 | 여성요인 등 일부 불임원인 컬럼이 단일값(0)만 가짐 | 모델 기여 없음 → 제거 후보 |
+| 결측 연쇄 패턴 | PGD/PGS가 NaN이면 저장된 배아 수, 미세주입 배아이식수도 NaN 동반 | 결측은 구조적으로 묶여 있음 |
+| 이상치 처리 필요 | 이상치 제거 시 성능 향상 경험 | 제거 vs 대체 전략 비교 필요 |
+| 데이터 불균형 | 클래스 불균형 존재 | Hybrid sampling, threshold 조정 필요 |
+
+### 파생변수 후보 정리
+
+| 범주 | 새 변수 | 계산 방법 | 의미 |
+|------|--------|----------|------|
+| 시술 관련 | 나이 대비 시술 횟수 | 총 시술 횟수 ÷ 시술 당시 나이 | 고령일수록 시술 집중 가능성 |
+| 시술 관련 | IVF 시술 비율 | IVF 시술 횟수 ÷ 총 시술 횟수 | IVF 의존도 |
+| 시술 관련 | DI 시술 비율 | DI 시술 횟수 ÷ 총 시술 횟수 | 기증 시술 비율 |
+| 배아/난자 | 시술당 생성 배아 수 | 총 생성 배아 수 ÷ 총 시술 횟수 | 시술 효율 |
+| 배아/난자 | 미세주입 성공률 | 생성된 배아 수 ÷ 미세주입 난자 수 | ICSI 성공 지표 |
+| 배아/난자 | 난자 활용률 | 이식된 배아 수 ÷ 수집된 신선 난자 수 | 난자→이식 전환 |
+| 불임원인 | 불임 원인 개수 | 남성+여성+부부 요인 합 | 원인 복합성 |
+| 불임원인 | 남성 원인 개수 | 남성 주+부 요인 합 | 남성 문제 강도 |
+| 불임원인 | 여성 원인 개수 | 여성 주+부 요인 합 | 여성 문제 강도 |
+| 기증 관련 | 기증 정자 사용 비율 | 기증혼합 난자 ÷ (파트너혼합 난자+1) | 기증 의존도 |
+
+
+### Submission Score Summary (Grouped)
+
+#### Best Score TOP
+
+| Rank | Key Change | Score |
+|------|------------|-------|
+| 1 | **Optuna + XGBoost** | 0.74089 |
+| 2 | **Drop 변수 변경** | 0.7396 |
+| 3 | **Drop 축소 + 결측치 전략 변경** | 0.7396 |
+| 4 | **이상치 3사분위수 대체** | 0.7396 |
+| 5 | **Mapping 제외** | 0.73962 |
+
+#### Baseline & Simple Preprocessing
+
+| Main Change | Score |
+|------------|-------|
+| baseline | 0.6735 |
+| 0,2 채우기 for문 적용 | 0.6733 |
+| for문 수정 | 0.6733 |
+
+#### Scaling + RandomForest Improvement
+
+| Main Change | Score |
+|------------|-------|
+| RobustScaler + RF RandomSearchCV | 0.7271 |
+| 로그변환 + 이상치 제거 + RF | 0.7238 |
+
+#### Model Change Trials (ExtraTrees etc.)
+
+| Main Change | Score |
+|------------|-------|
+| ExtraTrees 적용 | 0.6848 |
+| ExtraTrees 변경 | 0.6414 |
+
+#### Feature Engineering Attempts
+
+| Main Change | Score |
+|------------|-------|
+| 배아 생성 이유 컬럼 추가 | 0.6681 |
+| 파생변수 생성 + RandomForest | 0.4978 |
+
+#### Multicollinearity / Drop Strategy
+
+| Main Change | Score |
+|------------|-------|
+| 다중공선성 제거 (0.8) | 0.6656 |
+| 다중공선성 제거 (0.9) | 0.6664 |
+| Drop 변수 변경 | 0.7396 |
+| Drop 축소 + 결측치 채움 전략 | 0.7396 |
+
+#### Sampling Methods
+
+| Main Change | Score |
+|------------|-------|
+| SMOTEENN 적용 | 0.7038 |
+| SMOTETomek 적용 | 0.6733 |
+| ADASYN 적용 | 0.6689 |
+| SMOTEENN 적용 (후반) | 0.5743 |
+
+#### Boosting Models
+
+| Main Change | Score |
+|------------|-------|
+| CatBoost 적용 | 0.7319 |
+| CatBoost 변경 | 0.7343 |
+| Drop X + Sampling X | 0.7347 |
+| XGBoost + GridSearchCV | 0.7302 |
+| Optuna + XGBoost | 0.74089 |
+
+#### Outlier Handling
+
+| Main Change | Score |
+|------------|-------|
+| 이상치 제거 | 0.7238 |
+| 이상치 3사분위수 대체 | 0.7396 |
+| 이상치 3시그마 대체 | 0.7394 |
+| 이상치 IQR 대체 | 0.7391 |
+| 이상치 Median 대체 | 0.7349 |
 
 ## 6. 한 줄 소감
 |이름|소감|
